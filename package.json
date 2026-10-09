@@ -8,7 +8,8 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon server.js"
+    "dev": "nodemon --env-file=.env server.js",
+    "migrate": "node --env-file=.env src/migrate.js"
   },
   "dependencies": {
     "express": "^5.2.1",
