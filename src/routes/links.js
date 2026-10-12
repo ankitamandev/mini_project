@@ -60,6 +60,14 @@ router.get('/:code', async (req, res) => {
     res.json({ ...row, short_url: `${BASE_URL}/${row.code}` });
 });
 
+router.get('/:code/stats', async (req, res) => {
+    const result = await query(
+        `SELECT clicks FROM links WHERE code = $1`, [req.params.code]
+    );
+    if(result.rows.length === 0) throw new ApiError (404, 'not found');
+    res.json({"total clicks" : result.rows[0].clicks});
+});
+
 router.delete('/:code', async (req, res) => {
     const requestedCode = req.params.code.trim();
     const result = await query(
