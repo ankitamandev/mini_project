@@ -25,10 +25,20 @@ app.use('/links', linksRouter);
 
 app.get('/:code', async (req, res) => {
     const result = await query(
-        `SELECT original_url FROM links WHERE code = $1`,
+        `SELECT original_url, clicks FROM links WHERE code = $1`,
         [req.params.code]
     );
     if (result.rows.length === 0) throw new ApiError(404, 'link not found');
+    const currClickCount = result.rows[0].clicks;
+    console.log(`Current click Count :${currClickCount}`);
+    const updateCount = await query(
+        `UPDATE links 
+        SET clicks = $1
+        WHERE code = $2 RETURNING *`,
+        [currClickCount + 1, req.params.code]
+    );
+    if(updateCount.rows.length === 0) throw new ApiError(404,'could not update clicks')
+    
     res.redirect(302, result.rows[0].original_url);
 });
 

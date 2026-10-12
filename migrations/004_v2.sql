@@ -1,0 +1,5 @@
+ALTER TABLE links
+ADD COLUMN expires_at TIMESTAMPTZ;
+
+ALTER TABLE links 
+ADD COLUMN clicks integer NOT NULL DEFAULT 0;

@@ -6,19 +6,21 @@ import { generateShortCode } from '../linkShortner.js';
 
 const router = express.Router();
 
-const BASE_URL = process.env.BASE_URL;   // apne requireEnv('BASE_URL') se le lo
+const BASE_URL = process.env.BASE_URL;   
 const MAX_ATTEMPTS = 5;
 const UNIQUE_VIOLATION = '23505';
 
-// POST /links — naya short link banao
+// POST /links 
 router.post('/', async (req, res) => {
     const errors = validateLinks(req.body);
     if (errors.length > 0) throw new ApiError(400, 'validation failed', errors);
 
     const originalUrl = req.body.link.trim();
+    const alias = req.body.alias ? req.body.alias.trim() : null;
 
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-        const code = generateShortCode();
+        const code = alias ? alias : generateShortCode();
+        
         try {
             const result = await query(
                 `INSERT INTO links (code, original_url)
@@ -32,9 +34,14 @@ router.post('/', async (req, res) => {
                 .location(`/links/${row.code}`)
                 .json({ ...row, short_url: `${BASE_URL}/${row.code}` });
         } catch (err) {
-            // code pehle se kisi ne le liya: naya code bana ke dobara try karo
-            if (err.code === UNIQUE_VIOLATION) continue;
-            throw err;   // koi aur error hai to central handler ko jaane do
+            
+            if (err.code === UNIQUE_VIOLATION) {
+                if(alias) {
+                    throw new ApiError(409, 'Custom alias already in use');
+                }
+                continue;
+            }
+            throw err;   
         }
     }
 
@@ -51,6 +58,18 @@ router.get('/:code', async (req, res) => {
 
     const row = result.rows[0];
     res.json({ ...row, short_url: `${BASE_URL}/${row.code}` });
+});
+
+router.delete('/:code', async (req, res) => {
+    const requestedCode = req.params.code.trim();
+    const result = await query(
+        `DELETE FROM links WHERE code = $1`, [requestedCode]
+    );
+    if(result.rowCount === 1) {
+        res.status(201).end();
+    } else {
+        res.status(404).end();
+    }
 });
 
 export default router;
