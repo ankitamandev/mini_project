@@ -61,11 +61,45 @@ router.get('/:code', async (req, res) => {
 });
 
 router.get('/:code/stats', async (req, res) => {
-    const result = await query(
-        `SELECT clicks FROM links WHERE code = $1`, [req.params.code]
+
+    const linkResult = await query(
+        `SELECT id, created_at FROM links WHERE code = $1`,
+        [req.params.code]
     );
-    if(result.rows.length === 0) throw new ApiError (404, 'not found');
-    res.json({"total clicks" : result.rows[0].clicks});
+    if (linkResult.rows.length === 0) throw new ApiError(404, 'link not found');
+    const { id, created_at } = linkResult.rows[0];
+
+    const totalsResult = await query(
+        `SELECT
+             COUNT(*)::int AS total_clicks,
+             COUNT(*) FILTER (WHERE clicked_at >= now() - interval '7 days')::int AS last_7_days
+         FROM link_clicks
+         WHERE link_id = $1`,
+        [id]
+    );
+    const { total_clicks, last_7_days } = totalsResult.rows[0];
+
+    const dailyResult = await query(
+        `SELECT
+             (clicked_at AT TIME ZONE 'Asia/Kolkata')::date::text AS day,
+             COUNT(*)::int AS clicks
+         FROM link_clicks
+         WHERE link_id = $1
+           AND clicked_at >= now() - interval '7 days'
+         GROUP BY day
+         ORDER BY day`,
+        [id]
+    );
+
+    const days = Math.max(1, Math.ceil((Date.now() - created_at.getTime()) / 86_400_000));
+
+    res.json({
+        code: req.params.code,
+        total_clicks,
+        last_7_days,
+        avg_per_day: Number((total_clicks / days).toFixed(2)),
+        daily: dailyResult.rows,
+    });
 });
 
 router.delete('/:code', async (req, res) => {
