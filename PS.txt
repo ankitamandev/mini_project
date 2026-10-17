@@ -1,0 +1,30 @@
+mini_project/
+├── server.js           
+├── package.json
+├── .env.example
+├── README.md
+├── migrations/          
+│   ├── 001_create_links_table.sql
+│   └── … 007_users.sql
+├── src/                 
+│   ├── config.js
+│   ├── db.js
+│   ├── errors.js
+│   ├── auth.js
+│   ├── rateLimit.js
+│   ├── validate.js
+│   ├── linkShortner.js
+│   ├── migrate.js
+│   └── routes/
+│       ├── users.js
+│       ├── links.js
+│       └── redirect.js
+└── public/              
+    ├── index.html
+    ├── styles.css
+    └── js/
+        ├── app.js
+        ├── api.js       
+        ├── charts.js
+        ├── demo.js
+        └── format.js
